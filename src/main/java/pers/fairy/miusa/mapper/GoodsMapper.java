@@ -2,10 +2,14 @@ package pers.fairy.miusa.mapper;
 
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Update;
 import pers.fairy.miusa.entity.Goods;
 import pers.fairy.miusa.entity.GoodsExample;
 
 public interface GoodsMapper {
+    @Update("update miusa_goods set stock_count = stock_count - 1 where goods_id = #{goodsId} and stock_count > 0")
+    int reduceStock(Long goodsId);
+
     long countByExample(GoodsExample example);
 
     int deleteByExample(GoodsExample example);
@@ -33,4 +37,5 @@ public interface GoodsMapper {
     int updateByPrimaryKeyWithBLOBs(Goods record);
 
     int updateByPrimaryKey(Goods record);
+
 }

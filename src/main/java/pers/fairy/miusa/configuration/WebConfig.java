@@ -6,6 +6,7 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import pers.fairy.miusa.interceptor.AccessLimitInterceptor;
 import pers.fairy.miusa.interceptor.PassportInterceptor;
 
 
@@ -18,10 +19,13 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Autowired
     PassportInterceptor passportInterceptor;
+    @Autowired
+    AccessLimitInterceptor accessLimitInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(passportInterceptor).excludePathPatterns("/login/**","/static/**");
+        registry.addInterceptor(passportInterceptor).excludePathPatterns("/login/**", "/static/**", "/goods/to_list");
+        registry.addInterceptor(accessLimitInterceptor).addPathPatterns("/miusa/**");
     }
 
 }

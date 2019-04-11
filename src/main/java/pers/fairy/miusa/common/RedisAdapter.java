@@ -32,6 +32,12 @@ public class RedisAdapter implements InitializingBean {
         jedisPool = new JedisPool();
     }
 
+    public Long expire(String key, int seconds) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            return jedis.expire(key, seconds);
+        }
+    }
+
     public String setex(String key, String value, int seconds) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.setex(key, seconds, value);
@@ -147,6 +153,12 @@ public class RedisAdapter implements InitializingBean {
     public Long incr(String key) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.incr(key);
+        }
+    }
+
+    public Long decr(String key) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            return jedis.decr(key);
         }
     }
 

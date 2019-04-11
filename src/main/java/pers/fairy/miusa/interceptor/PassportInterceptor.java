@@ -9,13 +9,16 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 import pers.fairy.miusa.common.HostHolder;
 import pers.fairy.miusa.common.RedisAdapter;
+import pers.fairy.miusa.common.Result;
 import pers.fairy.miusa.entity.User;
 import pers.fairy.miusa.service.UserService;
 import pers.fairy.miusa.utils.RedisKeyUtil;
+import pers.fairy.miusa.utils.WebUtil;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.PrintWriter;
 
 /**
  * @author ：DZGodly
@@ -51,8 +54,12 @@ public class PassportInterceptor implements HandlerInterceptor {
             user = JSON.parseObject(redisAdapter.get(key), User.class);
         }
         if (user == null) {
-            log.info("用户未登录，重定向到登录页面");
-            response.sendRedirect("/login");
+            log.info("用户未登录，请求返回.");
+            String header = request.getHeader("X-Requested-With");
+            if (header != null && header.equals("XMLHttpRequest"))
+                WebUtil.modifyResponse(response, Result.LOGIN_ERROR("未登录，请登录"));
+            else
+                response.sendRedirect("/login");
             return false;
         }
         hostHolder.setUser(user);

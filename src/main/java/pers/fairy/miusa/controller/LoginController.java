@@ -8,11 +8,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import pers.fairy.miusa.common.Result;
 import pers.fairy.miusa.entity.User;
-import pers.fairy.miusa.exception.GlobalException;
 import pers.fairy.miusa.service.RedisService;
 import pers.fairy.miusa.service.UserService;
 import pers.fairy.miusa.utils.UUIDUtil;
-import pers.fairy.miusa.vo.LoginVo;
+import pers.fairy.miusa.vo.LoginVO;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
@@ -38,7 +37,7 @@ public class LoginController {
 
     @PostMapping("/do_login")
     @ResponseBody
-    public Result login(@Valid LoginVo loginForm, HttpServletResponse response) {
+    public Result login(@Valid LoginVO loginForm, HttpServletResponse response) {
         User user = userService.login(Long.valueOf(loginForm.getMobile()), loginForm.getPassword());
         Cookie tokenCookie = setTokenForUser(user);
         response.addCookie(tokenCookie);

@@ -3,10 +3,10 @@ package pers.fairy.miusa.vo;
 import javax.validation.constraints.NotNull;
 
 import org.hibernate.validator.constraints.Length;
-import pers.fairy.miusa.validator.IsMobile;
+import pers.fairy.miusa.common.validator.IsMobile;
 
 
-public class LoginVo {
+public class LoginVO {
 
     @NotNull
     @IsMobile
@@ -34,6 +34,6 @@ public class LoginVo {
 
     @Override
     public String toString() {
-        return "LoginVo [mobile=" + mobile + ", password=" + password + "]";
+        return "LoginVO [mobile=" + mobile + ", password=" + password + "]";
     }
 }

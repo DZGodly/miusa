@@ -124,7 +124,7 @@
       #{goodsPrice,jdbcType=DOUBLE}, #{orderChannel,jdbcType=INTEGER}, #{status,jdbcType=INTEGER}, 
       #{createDate,jdbcType=TIMESTAMP}, #{payDate,jdbcType=TIMESTAMP})
   </insert>
-  <insert id="insertSelective" parameterType="pers.fairy.miusa.entity.OrderInfo">
+  <insert id="insertSelective" parameterType="pers.fairy.miusa.entity.OrderInfo" useGeneratedKeys="true" keyColumn="id" keyProperty="id">
     insert into order_info
     <trim prefix="(" suffix=")" suffixOverrides=",">
       <if test="id != null">

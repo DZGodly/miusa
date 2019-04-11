@@ -26,18 +26,21 @@ public class Result {
         return new Result(500, "server_error");
     }
 
-    public static Result ORDER_ERROR() {
-        return new Result(510, "order_error");
+    public static Result ORDER_ERROR(String msg) {
+        return new Result(510, "order_error:" + msg);
     }
 
-    public static Result GOOD_ERROR() {
-        return new Result(520, "good_error");
+    public static Result GOOD_ERROR(String msg) {
+        return new Result(520, "good_error" + msg);
     }
 
     public static Result LOGIN_ERROR(String msg) {
         return new Result(530, "login_error:" + msg);
     }
 
+    public static Result ACCESS_ERROR(String msg) {
+        return new Result(540, "access_error:" + msg);
+    }
 
     private Result(int code, String msg) {
         this.code = code;
