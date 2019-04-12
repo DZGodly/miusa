@@ -25,7 +25,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(passportInterceptor).excludePathPatterns("/login/**", "/static/**", "/goods/to_list");
-        registry.addInterceptor(accessLimitInterceptor).addPathPatterns("/miusa/**");
+        registry.addInterceptor(accessLimitInterceptor).addPathPatterns("/miusa/**").excludePathPatterns("/miusa/result");
     }
 
 }

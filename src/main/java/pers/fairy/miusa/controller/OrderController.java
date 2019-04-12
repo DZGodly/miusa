@@ -22,6 +22,11 @@ public class OrderController {
     @Autowired
     OrderInfoService orderInfoService;
 
+    /**
+     * 获取订单信息
+     * @param orderId 订单编号
+     * @return 订单信息
+     */
     @GetMapping("/detail")
     @ResponseBody
     public Result getOrderInfo(@RequestParam Long orderId) {

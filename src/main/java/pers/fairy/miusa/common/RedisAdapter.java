@@ -32,6 +32,18 @@ public class RedisAdapter implements InitializingBean {
         jedisPool = new JedisPool();
     }
 
+    public Long zadd(String key, double score, String member) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            return jedis.zadd(key, score, member);
+        }
+    }
+
+    public Boolean exists(String key) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            return jedis.exists(key);
+        }
+    }
+
     public Long expire(String key, int seconds) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.expire(key, seconds);

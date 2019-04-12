@@ -29,8 +29,8 @@ public class RedisKeyUtil {
         return "MIUSA_ORDER:" + goodsId + SPLIT + userId;
     }
 
-    public static String miusaOverKey() {
-        return "MIUSA_OVER:";
+    public static String miusaFailedKey(Long goodsId) {
+        return "MIUSA_Failed:"+goodsId;
     }
 
     private RedisKeyUtil() {

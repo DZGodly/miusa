@@ -62,6 +62,12 @@ public class MiusaController implements InitializingBean {
         }
     }
 
+    /**
+     *  获取秒杀路径
+     *
+     * @param goodsId 商品编号
+     * @return 秒杀路径
+     */
     @GetMapping("/path")
     @AccessLimit(seconds = 60, maxCount = 5)
     @ResponseBody
@@ -70,6 +76,13 @@ public class MiusaController implements InitializingBean {
         return Result.SUCCESS(path);
     }
 
+    /**
+     * 秒杀接口
+     *
+     * @param goodsId 商品id
+     * @param path 秒杀路径
+     * @return 返回状态-排队中
+     */
     @PostMapping("/{path}/do_miusa")//
     @ResponseBody
     public Result doMiusa(@RequestParam Long goodsId,
@@ -104,6 +117,12 @@ public class MiusaController implements InitializingBean {
         return Result.SUCCESS(OrderResult.WAITING.getValue());
     }
 
+    /**
+     * 获取秒杀接口
+     *
+     * @param goodsId 商品id
+     * @return 下单成功返回订单编号，失败则：-1 表示下单失败，0 表示排队中
+     */
     @GetMapping("/result")
     @ResponseBody
     public Result getMiusaResult(@RequestParam long goodsId) {

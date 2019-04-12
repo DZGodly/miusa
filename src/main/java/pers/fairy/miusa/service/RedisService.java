@@ -27,6 +27,17 @@ public class RedisService {
         return count;
     }
 
+    /**
+     * 检查秒杀商品是否存在。
+     *
+     * @param goodsId 商品 id
+     * @return 存在则返回true，否则返回 false。
+     */
+    public Boolean checkMiusaGoods(Long goodsId) {
+        String key = RedisKeyUtil.stockKey(goodsId);
+        return redisAdapter.exists(key);
+    }
+
     public String preloadStock(Long goodsId, Integer stockCount) {
         String key = RedisKeyUtil.stockKey(goodsId);
         return redisAdapter.set(key, stockCount + "");
@@ -48,14 +59,14 @@ public class RedisService {
         return redisAdapter.setex(key, goodsId + "", 600);
     }
 
-    public void setMiusaOver(Long goodsId) {
-        String key = RedisKeyUtil.miusaOverKey();
-        redisAdapter.sadd(key, goodsId + "");
+    public void setMiusaFailed(Long goodsId, Long userId) {
+        String key = RedisKeyUtil.miusaFailedKey(goodsId);
+        redisAdapter.sadd(key, userId + "");
     }
 
-    public boolean isMiusaOver(Long goodsId) {
-        String key = RedisKeyUtil.miusaOverKey();
-        return redisAdapter.sismember(key, goodsId + "");
+    public boolean isMiusaFailed(Long goodsId, Long userId) {
+        String key = RedisKeyUtil.miusaFailedKey(goodsId);
+        return redisAdapter.sismember(key, userId + "");
     }
 
     public void setMiusaOrder(Long goodsId, MiusaOrder miusaOrder) {

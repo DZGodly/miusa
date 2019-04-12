@@ -35,6 +35,9 @@ public class GoodsController {
     @Autowired
     private RedisService redisService;
 
+    /**
+     *  获取商品列表，“/goods/to_list”
+     */
     @GetMapping(value = "/to_list", produces = "text/html")
     @ResponseBody
     public String getGoodsList(Model model, HttpServletRequest request, HttpServletResponse response) {
@@ -55,6 +58,12 @@ public class GoodsController {
         return html;
     }
 
+    /**
+     *  根据商品id获取商品详情
+     *
+     * @param goodsId 商品id
+     * @return 商品详情
+     */
     @GetMapping(value = "/detail/{goodsId}")
     @ResponseBody
     public Result getGoodsDetail(@PathVariable Long goodsId) {

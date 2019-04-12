@@ -35,6 +35,14 @@ public class MiusaGoodsService {
     @Autowired
     private GoodsService goodsService;
 
+    /**
+     * 秒杀商品接口，首先减少库存，成功后生成订单，失败则表示商品库存不足，设置秒杀商品结束。
+     *
+     * @param goods  商品
+     * @param userId 用户编号
+     * @return 下单成功则返回订单信息，否则返回 null
+     * @throws DataAccessException 数据库异常，将重复下单产生的异常交给上层处理
+     */
     @Transactional
     public OrderInfo miusa(GoodsVO goods, Long userId) throws DataAccessException {
         Long goodsId = goods.getId();
@@ -42,19 +50,21 @@ public class MiusaGoodsService {
         if (success) {
             return miusaOrderService.createMiusaOrder(goods, userId);
         } else {
-            redisService.setMiusaOver(goodsId);
+            redisService.setMiusaFailed(goodsId,userId);
             return null;
         }
     }
 
+    /**
+     * 生成秒杀入口路径。
+     * 先检查商品 id 是否存在，不存在则抛出异常；
+     *
+     * @param goodsId 商品 id
+     * @return 秒杀入口路径
+     */
     public String createMiusaPath(Long goodsId) {
-        GoodsVO goods;
-        if ((goods = miusaGoodsMapper.selectMiusaGoodsByGoodsId(goodsId)) == null)
+        if (!redisService.checkMiusaGoods(goodsId))
             throw new GlobalException("秒杀失败，不存在该商品！");
-        long current = System.currentTimeMillis();
-        long start = goods.getStartDate().getTime();
-        if (current < start)
-            throw new GlobalException("秒杀未开始！");
         String path = UUIDUtil.getRandomPath();
         redisService.setMiusaPath(path, goodsId);
         return path;
@@ -62,6 +72,19 @@ public class MiusaGoodsService {
 
     public List<GoodsVO> listMiusaGoods() {
         return miusaGoodsMapper.selectMiusaGoods();
+    }
+
+    // 检查路径是否存在
+    public boolean checkPath(String path, Long goodsId) {
+        String goodsIdStr = redisService.getMiusaGoodsId(path);
+        return goodsId.equals(Long.valueOf(goodsIdStr));
+    }
+
+    // 检查当前是否是秒杀活动时间
+    public boolean checkTime(GoodsVO goods, long miusaTime) {
+        long start = goods.getStartDate().getTime();
+        long end = goods.getEndDate().getTime();
+        return start <= miusaTime && miusaTime <= end;
     }
 
     public GoodsDetailVO getGoodsDetailVOByGoodsId(Long goodsId) {
@@ -82,15 +105,6 @@ public class MiusaGoodsService {
         }
         goodsDetailVO.setRemainSeconds(remainSeconds);
         return goodsDetailVO;
-    }
-
-    public boolean checkPath(String path, Long goodsId) {
-        String goodsIdStr = redisService.getMiusaGoodsId(path);
-        return goodsId.equals(Long.valueOf(goodsIdStr));
-    }
-
-    public boolean checkEnd(GoodsVO goods, long miusaTime) {
-        return goods.getEndDate().getTime() < miusaTime;
     }
 
     public GoodsVO getGoodsVOById(Long goodsId) {

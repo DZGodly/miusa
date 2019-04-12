@@ -32,29 +32,33 @@ public class MiusaOrderService {
     private HostHolder hostHolder;
 
     @Transactional
-    public OrderInfo createMiusaOrder(GoodsVO goods, Long userId) throws DataAccessException{
+    public OrderInfo createMiusaOrder(GoodsVO goods, Long userId) throws DataAccessException {
         Long goodsId = goods.getId();
+        // 生成订单
         OrderInfo orderInfo = orderInfoService.createOrder(goods, userId);
+        // 对于秒杀商品，再额外生成秒杀订单
         MiusaOrder miusaOrder = new MiusaOrder();
         miusaOrder.setGoodsId(goodsId);
         miusaOrder.setOrderId(orderInfo.getId());
         miusaOrder.setUserId(userId);
         miusaOrderMapper.insertSelective(miusaOrder);
-
+        // 将秒杀订单存入缓存
         redisService.setMiusaOrder(goodsId, miusaOrder);
         return orderInfo;
     }
 
     public long getMiusaResult(Long goodsId) {
+        // 从缓存中取出秒杀订单
         MiusaOrder miusaOrder = redisService.getMiusaOrder(goodsId);
         long result;
         if (miusaOrder != null) { // 秒杀成功返回订单 ID
             result = miusaOrder.getOrderId();
-        } else {
-            if (redisService.isMiusaOver(goodsId))
-                result = OrderResult.FAILED.getValue();
+        } else { // 秒杀订单未生成，判断秒杀是否失败
+            Long userId = hostHolder.getUser().getId();
+            if (redisService.isMiusaFailed(goodsId, userId))
+                result = OrderResult.FAILED.getValue(); // 秒杀失败
             else
-                result = OrderResult.WAITING.getValue();
+                result = OrderResult.WAITING.getValue();// 仍在处理，继续等待
         }
         return result;
     }

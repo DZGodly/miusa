@@ -29,10 +29,11 @@ public class MsgReceiver {
         MiusaMessage miusaMessage = JSON.parseObject(message, MiusaMessage.class);
         Long userId = miusaMessage.getUserId();
         Long goodsId = miusaMessage.getGoodsId();
-        long miusaTime = miusaMessage.getMiusaTime();
         GoodsVO goods = miusaGoodsService.getGoodsVOById(goodsId);
-        boolean isEnd = miusaGoodsService.checkEnd(goods, miusaTime);
-        if (!isEnd) {
+        // 检查是否处于秒杀时间
+        long miusaTime = miusaMessage.getMiusaTime();
+        boolean onTime = miusaGoodsService.checkTime(goods, miusaTime);
+        if (onTime) { // 如果处于秒杀时间则进行秒杀
             try {
                 miusaGoodsService.miusa(goods, userId);
             } catch (Exception e) {
