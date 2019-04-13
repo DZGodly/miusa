@@ -28,19 +28,22 @@ public class AccessLimitInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        if (!(handler instanceof HandlerMethod)) {
+        if (!(handler instanceof HandlerMethod)) { // 如果不是处理器方法直接返回
             return true;
         }
         HandlerMethod handlerMethod = (HandlerMethod) handler;
+        // 获取注解
         AccessLimit accessLimit = handlerMethod.getMethodAnnotation(AccessLimit.class);
         if (accessLimit == null)
             return true;
+        // 获取各个字段的值
         int seconds = accessLimit.seconds();
         int maxCount = accessLimit.maxCount();
         String url = request.getRequestURI();
+        // 保存当前用户的访问次数（保存 seconds 秒）
         User user  = hostHolder.getUser();
         Long count = redisService.accessCount(user.getId(), url,seconds);
-        if (count >= maxCount) {
+        if (count >= maxCount) { // 如果超过最大访问次数，表示访问频繁
             WebUtil.modifyResponse(response,Result.ACCESS_ERROR("访问频繁，请稍后再试"));
             return false;
         }

@@ -9,20 +9,16 @@ import pers.fairy.miusa.common.OrderResult;
 import pers.fairy.miusa.common.Result;
 import pers.fairy.miusa.common.access.AccessLimit;
 import pers.fairy.miusa.entity.MiusaOrder;
-import pers.fairy.miusa.entity.OrderInfo;
 import pers.fairy.miusa.exception.EmptyGoodsListException;
-import pers.fairy.miusa.exception.GlobalException;
 import pers.fairy.miusa.rabbitmq.MiusaMessage;
 import pers.fairy.miusa.rabbitmq.MsgSender;
 import pers.fairy.miusa.service.GoodsService;
 import pers.fairy.miusa.service.MiusaGoodsService;
 import pers.fairy.miusa.service.MiusaOrderService;
 import pers.fairy.miusa.service.RedisService;
-import pers.fairy.miusa.utils.UUIDUtil;
 import pers.fairy.miusa.vo.GoodsVO;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
@@ -51,7 +47,7 @@ public class MiusaController implements InitializingBean {
 
     // 初始化，将商品库存加载入内存
     @Override
-    public void afterPropertiesSet() throws Exception {
+    public void afterPropertiesSet() throws EmptyGoodsListException {
         List<GoodsVO> goodsList = miusaGoodsService.listMiusaGoods();
         if (goodsList == null)
             throw new EmptyGoodsListException("无任何商品可载入");
@@ -63,7 +59,7 @@ public class MiusaController implements InitializingBean {
     }
 
     /**
-     *  获取秒杀路径
+     * 获取秒杀路径
      *
      * @param goodsId 商品编号
      * @return 秒杀路径
@@ -80,10 +76,10 @@ public class MiusaController implements InitializingBean {
      * 秒杀接口
      *
      * @param goodsId 商品id
-     * @param path 秒杀路径
+     * @param path    秒杀路径
      * @return 返回状态-排队中
      */
-    @PostMapping("/{path}/do_miusa")//
+    @PostMapping("/{path}/do_miusa")
     @ResponseBody
     public Result doMiusa(@RequestParam Long goodsId,
                           @PathVariable String path) {
@@ -107,12 +103,7 @@ public class MiusaController implements InitializingBean {
             return Result.ORDER_ERROR("您已下单，请前往查看");
         }
         // 将订单放到消息队列异步处理，然后返回排队等候的状态
-        Long userId = hostHolder.getUser().getId();
-        long current = System.currentTimeMillis();
-        MiusaMessage message = new MiusaMessage();
-        message.setGoodsId(goodsId);
-        message.setUserId(userId);
-        message.setMiusaTime(current);
+        MiusaMessage message = getMiusaMessage(goodsId);
         msgSender.sendMiusaMessage(message);
         return Result.SUCCESS(OrderResult.WAITING.getValue());
     }
@@ -130,4 +121,13 @@ public class MiusaController implements InitializingBean {
         return Result.SUCCESS(result);
     }
 
+    private MiusaMessage getMiusaMessage(Long goodsId) {
+        Long userId = hostHolder.getUser().getId();
+        long current = System.currentTimeMillis();
+        MiusaMessage message = new MiusaMessage();
+        message.setGoodsId(goodsId);
+        message.setUserId(userId);
+        message.setMiusaTime(current);
+        return message;
+    }
 }
