@@ -128,7 +128,7 @@ public class IsMobileValidator implements ConstraintValidator<IsMobile, String> 
 
 ### 页面优化
 
-一.动态页面缓存
+一.**动态页面缓存**
 
 一般返回页面时都是依靠 Spring 框架调用`ThymeleafViewResolver`来对返回的视图进行解析。
 
@@ -144,7 +144,7 @@ public class IsMobileValidator implements ConstraintValidator<IsMobile, String> 
 
 这种方式减小了应用服务器的压力，提高了响应速度，但是把压力转移到了 redis 服务器，同时增加了网络开销，网络状况不好时，这种方式可能适得其反。
 
-二.页面静态化
+二.**页面静态化**
 
 页面静态化就是将页面中模板引擎（例如`thymeleaf`）的相关语句剔除，然后数据部分通过 Ajax 来异步获取。
 
