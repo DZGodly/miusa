@@ -12,7 +12,6 @@
   * [接口安全](#接口安全)
     + [隐藏秒杀地址和图形验证码](#隐藏秒杀地址和图形验证码)
     + [接口防刷](#接口防刷)
-  * [更多](#更多)
   * [参考](#参考)
 
 # miusa
@@ -303,4 +302,4 @@ public Result doMiusa(@RequestParam Long goodsId,
 
 李智慧.大型网站技术架构：核心原理与案例分析.电子工业出版社.2013
 
-流程图来自![ProcessOn](https://www.processon.com)
+流程图来自[ProcessOn](https://www.processon.com)
