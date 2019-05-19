@@ -15,10 +15,10 @@ import java.lang.annotation.*;
         validatedBy = {IsMobileValidator.class}
 )
 public @interface IsMobile {
-
+    // required 和 message 是自定义参数，groups 和 payload 是两个必须包含的参数。
     boolean required() default true;
 
-    String message() default "手机号码格式错误！";
+    String message() default "手机号码格式错误！"; // 校验失败时的错误信息
 
     Class<?>[] groups() default {};
 

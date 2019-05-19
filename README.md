@@ -43,7 +43,7 @@ public Result login(@Valid LoginVO loginForm, HttpServletResponse response) {
 }
 ```
 
-如上面这段代码所示，我们把校验业务封装在校验器里，在 Controller 层只有一个`@Valid`注解就能完成参数校验的工作。校验细节如下（验证账号是否为合法手机号）：
+如上面这段代码所示，我们把校验业务封装在校验器里，在 Controller 层只有一个`@Valid`注解，它表示对被修饰的参数启用校验功能。校验细节如下（验证账号是否为合法手机号）：
 
 ```java
 public class LoginVO {
@@ -70,14 +70,12 @@ public class LoginVO {
         validatedBy = {IsMobileValidator.class}
 )
 public @interface IsMobile {
-// required 和 message 是自定义参数，groups 和 payload 是两个必须包含的参数。
+
     boolean required() default true;
 
     String message() default "手机号码格式错误！"; // 校验失败时的错误信息
 
-    Class<?>[] groups() default {};
-
-    Class<? extends Payload>[] payload() default {};
+	···
 }
 ```
 
@@ -117,7 +115,9 @@ public class IsMobileValidator implements ConstraintValidator<IsMobile, String> 
 
 秒杀接口首先检查秒杀地址是否有效：将请求路径中包含的随机字符串和缓存中保存的第一次请求产生的秒杀路径对比。
 
-然后判断商品库存是否足够：先从内存标记（一个保存售罄商品 ID 的 Set）中查看，如果内存标记标记了该商品，则直接返回商品售罄的信息给用户，否则通过网络访问 redis 缓存，redis 预减库存，并将减少后的库存数返回。如果返回值小于 0（商品库存不足）则在内存标记中添加该商品 ID，并返回，否则从缓存中根据商品编号读取秒杀订单。如果缓存中有该订单，则直接返回，避免重复下单，否则将订单信息放入消息队列，然后返回排队处理订单的信息，后台异步处理订单。
+接着从缓存中根据商品编号读取秒杀订单。如果缓存中有该订单，则直接返回，避免重复下单。
+
+否则判断商品库存是否足够：先从内存标记（一个保存售罄商品 ID 的集合）中查看，如果内存标记标记了该商品，则直接返回商品售罄的信息给用户，否则通过网络访问 redis 缓存，redis 预减库存，并将减少后的库存数返回。如果返回值小于 0（商品库存不足）则在内存标记中添加该商品 ID，并返回。否则将订单信息放入消息队列，然后返回排队处理订单的信息，后台异步处理订单。
 
 ![秒杀流程final](开发日志/秒杀流程final.png)
 
@@ -161,7 +161,7 @@ public class IsMobileValidator implements ConstraintValidator<IsMobile, String> 
 
 上图流程中库存的判断涉及到从数据库取商品信息，秒杀商品涉及下单、更新库存等访问数据库的操作，而实际的秒杀中，请求数量是相当高的。MySQL 是持久化存储，数据存放在磁盘里面，在读写时会涉及到一定的 IO，所以数据库往往成为网站的性能瓶颈。
 
-项目中使用缓存、内存标记等手段预存商品库存，请求到来时优先利用这两处判断商品库存是否充足。我把涉及数据库的秒杀商品的操作与秒杀时限的判断合并在一起，然后让 RabbitMQ 的消费者来执行。
+项目中使用缓存、内存标记等手段预存商品库存，请求到来时优先利用这两处判断商品库存是否充足。我把涉及数据库的秒杀商品的操作与秒杀时限的判断合并在一起，然后让消息队列的消费者来执行。
 
 使用内存标记记录已售罄的商品是为了避免随后的请求访问相同商品时访问 redis 数据库，减少网络开销。
 
@@ -169,8 +169,7 @@ public class IsMobileValidator implements ConstraintValidator<IsMobile, String> 
 @RabbitListener(queues = MQConfiguration.MIUSA_QUEUE)
 public void receiveMiusaMessage(String message) {
     MiusaMessage miusaMessage = JSON.parseObject(message, MiusaMessage.class);
-    Long userId = miusaMessage.getUserId();
-    Long goodsId = miusaMessage.getGoodsId();
+    ···
     GoodsVO goods = miusaGoodsService.getGoodsVOById(goodsId);
     // 检查是否处于秒杀时间
     long miusaTime = miusaMessage.getMiusaTime();
@@ -197,6 +196,11 @@ public Result doMiusa(@RequestParam Long goodsId,
     if (!isValidPath) {
         return Result.ERROR("非法路径");
     }
+    // 判断是否已经秒杀
+    MiusaOrder miusaOrder = miusaOrderService.getMiusaOrderByGoodsId(goodsId);
+    if (miusaOrder != null) {
+        return Result.ORDER_ERROR("您已下单，请前往查看");
+    }
     // 从内存中查看商品是否售罄
     if (goodsNotInStock.contains(goodsId)) {
         return Result.GOOD_ERROR("手慢一步！商品已售罄");
@@ -206,11 +210,6 @@ public Result doMiusa(@RequestParam Long goodsId,
     if (stock < 0) {
         goodsNotInStock.add(goodsId); // 标记售罄的商品，避免下次请求访问 redis 产生的开销。
         return Result.GOOD_ERROR("手慢一步！商品已售罄");
-    }
-    // 判断是否已经秒杀
-    MiusaOrder miusaOrder = miusaOrderService.getMiusaOrderByGoodsId(goodsId);
-    if (miusaOrder != null) {
-        return Result.ORDER_ERROR("您已下单，请前往查看");
     }
     // 将订单放到消息队列异步处理，然后返回排队等候的状态
     MiusaMessage message = getMiusaMessage(goodsId);
@@ -243,7 +242,7 @@ public Result doMiusa(@RequestParam Long goodsId,
 
 4）CSS 放在页面最上面，JavaScript 放在最下面：浏览器会在下载完全部的 CSS 之后才渲染页面。
 
-5）减少 cookie 传输：对于静态资源的访问，发送 Cookie没有意义，使用独立域名访问静态资源，避免请求静态资源时发送 Cookie。
+5）减少 Cookie 传输：对于静态资源的访问，发送 Cookie 没有意义，使用独立域名访问静态资源，避免请求静态资源时发送 Cookie。
 
 2.**CDN（Content Distribute Network，内容分发网络) 缓存静态资源**
 
@@ -298,7 +297,7 @@ public Result doMiusa(@RequestParam Long goodsId,
 
 ### 参考
 
-若鱼1919.Java秒杀系统方案优化 高性能高并发实战.慕课网
+若鱼1919.Java秒杀系统方案优化高性能高并发实战.慕课网
 
 李智慧.大型网站技术架构：核心原理与案例分析.电子工业出版社.2013
 

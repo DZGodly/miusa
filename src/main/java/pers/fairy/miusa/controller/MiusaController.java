@@ -87,6 +87,11 @@ public class MiusaController implements InitializingBean {
         if (!isValidPath) {
             return Result.ERROR("非法路径");
         }
+        // 判断是否已经秒杀
+        MiusaOrder miusaOrder = miusaOrderService.getMiusaOrderByGoodsId(goodsId);
+        if (miusaOrder != null) {
+            return Result.ORDER_ERROR("您已下单，请前往查看");
+        }
         // 从内存中查看商品是否售罄
         if (goodsNotInStock.contains(goodsId)) {
             return Result.GOOD_ERROR("手慢一步！商品已售罄");
@@ -96,11 +101,6 @@ public class MiusaController implements InitializingBean {
         if (stock < 0) {
             goodsNotInStock.add(goodsId); // 在内存中标记售罄的商品，避免下次请求访问 redis 产生的开销。
             return Result.GOOD_ERROR("手慢一步！商品已售罄");
-        }
-        // 判断是否已经秒杀
-        MiusaOrder miusaOrder = miusaOrderService.getMiusaOrderByGoodsId(goodsId);
-        if (miusaOrder != null) {
-            return Result.ORDER_ERROR("您已下单，请前往查看");
         }
         // 将订单放到消息队列异步处理，然后返回排队等候的状态
         MiusaMessage message = getMiusaMessage(goodsId);
