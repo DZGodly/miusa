@@ -5,9 +5,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pers.fairy.miusa.common.HostHolder;
 import pers.fairy.miusa.common.RedisAdapter;
+import pers.fairy.miusa.common.access.AccessLimitStrategy;
 import pers.fairy.miusa.entity.MiusaOrder;
 import pers.fairy.miusa.entity.User;
 import pers.fairy.miusa.utils.RedisKeyUtil;
+import redis.clients.jedis.Pipeline;
+import redis.clients.jedis.Response;
 
 /**
  * @author ：DZGodly
@@ -20,11 +23,20 @@ public class RedisService {
     @Autowired
     private HostHolder hostHolder;
 
-    public Long accessCount(Long userId, String url, int seconds) {
-        String key = RedisKeyUtil.accessKey(userId, url);
-        Long count = redisAdapter.incr(key);
-        redisAdapter.expire(key, seconds);
-        return count;
+    @Autowired
+    private AccessLimitStrategy accessLimitStrategy;
+
+    /**
+     * 查询访问频率
+     *
+     * @param userId    访问者id
+     * @param url       请求路径
+     * @param timeLimit 时间限制
+     * @param maxCount  最大访问次数
+     * @return 是否允许访问
+     */
+    public boolean isAccessAllowed(Long userId, String url, int timeLimit, int maxCount) {
+        return !accessLimitStrategy.limitAccess(userId, url, timeLimit, maxCount);
     }
 
     /**
@@ -93,4 +105,6 @@ public class RedisService {
     public String setHtml(String pageName, String page, int seconds) {
         return redisAdapter.setex(pageName, page, seconds);
     }
+
+
 }

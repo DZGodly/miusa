@@ -11,7 +11,7 @@
     + [其它优化](#其它优化)
   * [接口安全](#接口安全)
     + [隐藏秒杀地址和图形验证码](#隐藏秒杀地址和图形验证码)
-    + [接口防刷](#接口防刷)
+    + [接口防刷限流](#接口防刷限流)
   * [参考](#参考)
 
 # miusa
@@ -280,7 +280,7 @@ public Result doMiusa(@RequestParam Long goodsId,
 
 不过仅仅靠隐藏秒杀地址无法阻止恶意刷秒杀接口的行为，因为刷客可以在获取秒杀地址后发送第二次请求，刷秒杀接口，这时就需要添加图形验证码来防御刷客。浏览器在加载秒杀界面时使用 Ajax 请求服务器获取图形验证码，服务器生成验证码并将验证结果存入缓存，用户输入验证码后提交到获取秒杀地址的接口，该接口完成图形校验，校验成功才会返回给用户秒杀地址。然后浏览器才能继续访问秒杀接口。由于验证码的多样性和复杂性（比如数学公式验证码、行为验证码等），机器人、脚本等工具难以应付，刷客得不到秒杀地址，也就无法刷秒杀接口了。
 
-### 接口防刷
+### 接口防刷限流
 
 可以利用缓存记录用户请求的频率，由于访问流量限制是一个业务无关的服务，我们把它当成一个切面来处理。具体实现：
 
@@ -292,6 +292,48 @@ public Result doMiusa(@RequestParam Long goodsId,
 
 ![拦截器流量限制](开发日志/拦截器流量限制.png)
 
+使用策略模式解耦限流算法
+
+```Java
+@Component
+public class SlidingWindowStrategy implements AccessLimitStrategy {
+    ···
+    @Override
+    public boolean limitAccess(Long userId, String url, int timeLimit, int maxCount) {
+        String key = RedisKeyUtil.accessKey(userId, url);
+        long curTime = System.currentTimeMillis();
+        Pipeline pipeline = redisAdapter.piplined();
+        pipeline.multi();
+        pipeline.zadd(key, curTime, "" + curTime); // 访问次数 + 1
+        pipeline.zremrangeByScore(key, 0, curTime - timeLimit * 1000); // 移动窗口
+        Response<Long> curCount = pipeline.zcard(key);
+        pipeline.expire(key, timeLimit + 1);
+        pipeline.exec();
+        pipeline.close();
+        return curCount.get() >= maxCount; // 获取当前访问次数
+    }
+}
+
+@Service
+public class RedisService {
+    @Autowired
+    private AccessLimitStrategy accessLimitStrategy;
+
+    /**
+     * 查询访问频率
+     *
+     * @param userId    访问者id
+     * @param url       请求路径
+     * @param timeLimit 时间限制
+     * @param maxCount  最大访问次数
+     * @return 是否允许访问
+     */
+   public boolean isAccessAllowed(Long userId, String url, int timeLimit, int maxCount) {
+        return !accessLimitStrategy.limitAccess(userId, url, timeLimit, maxCount);
+    }
+}
+```
+
 这样限流的逻辑就被解耦出来了。在需要限流的接口上添加一个注解就好了，非常方便。
 
 
@@ -301,4 +343,4 @@ public Result doMiusa(@RequestParam Long goodsId,
 
 李智慧.大型网站技术架构：核心原理与案例分析.电子工业出版社.2013
 
-流程图来自[ProcessOn](https://www.processon.com)
+使用[ProcessOn](https://www.processon.com)绘制流程图

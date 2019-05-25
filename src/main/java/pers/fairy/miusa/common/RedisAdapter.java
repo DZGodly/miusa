@@ -8,10 +8,7 @@ import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.data.redis.connection.RedisConfiguration;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.stereotype.Component;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
-import redis.clients.jedis.Transaction;
+import redis.clients.jedis.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +27,16 @@ public class RedisAdapter implements InitializingBean {
     @Override
     public void afterPropertiesSet() throws Exception {
         jedisPool = new JedisPool();
+    }
+
+    public Pipeline piplined() {
+        try (Jedis jedis = jedisPool.getResource()) {
+            return jedis.pipelined();
+        }
+    }
+
+    public void closePipeline(Pipeline pipeline) {
+        pipeline.close();
     }
 
     public Long zadd(String key, double score, String member) {

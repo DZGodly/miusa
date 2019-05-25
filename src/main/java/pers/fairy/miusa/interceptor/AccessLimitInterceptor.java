@@ -40,11 +40,10 @@ public class AccessLimitInterceptor implements HandlerInterceptor {
         int seconds = accessLimit.seconds();
         int maxCount = accessLimit.maxCount();
         String url = request.getRequestURI();
-        // 保存当前用户的访问次数（保存 seconds 秒）
-        User user  = hostHolder.getUser();
-        Long count = redisService.accessCount(user.getId(), url,seconds);
-        if (count >= maxCount) { // 如果超过最大访问次数，表示访问频繁
-            WebUtil.modifyResponse(response,Result.ACCESS_ERROR("访问频繁，请稍后再试"));
+        // 如果超过最大访问次数，表示访问频繁
+        User user = hostHolder.getUser();
+        if (!redisService.isAccessAllowed(user.getId(), url, seconds, maxCount)) {
+            WebUtil.modifyResponse(response, Result.ACCESS_ERROR("访问频繁，请稍后再试"));
             return false;
         }
         return true;
